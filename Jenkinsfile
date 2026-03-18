@@ -133,7 +133,7 @@ pipeline {
                     if (destroyChoice == 'yes') {
                         withCredentials([[
                             $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: 'aws-iam-user-creds'
+                            credentialsId: 'jenkinsTest'
                         ]]) {
                             sh 'terraform destroy -auto-approve'
                         }

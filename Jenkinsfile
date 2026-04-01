@@ -3,6 +3,8 @@ pipeline {
    
     environment {
         AWS_REGION = 'us-west-2' 
+		TF_IN_AUTOMATION   = 'true'
+        SNYK_ORG           = credentials('snyk-org-slug')
     }
     stages {
         
@@ -55,6 +57,30 @@ pipeline {
         //     } 
         // }
     
+	        stage('Snyk IaC Scan Test') {
+            steps {
+                withCredentials([string(credentialsId: 'snyk-api-token-string', variable: 'SNYK_TOKEN')]) {
+                    sh '''
+                        export PATH=$PATH:/var/lib/jenkins/tools/io.snyk.jenkins.tools.SnykInstallation/snyk
+                        snyk-linux auth $SNYK_TOKEN
+                        snyk-linux iac test --org=$SNYK_ORG --severity-threshold=high || true
+                    '''
+                }
+            }
+        }
+        
+        stage('Snyk IaC Scan Monitor') {
+            steps {
+                snykSecurity(
+                    snykInstallation: 'snyk',
+                    snykTokenId: 'snyk-api-token',
+                    additionalArguments: '--iac --report --org=$SNYK_ORG --severity-threshold=high',
+                    failOnIssues: true,
+                    monitorProjectOnBuild: false
+                )
+            }
+        }
+	
         stage('Initialize Terraform') {
             steps {
                 withCredentials([[
